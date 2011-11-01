@@ -91,6 +91,8 @@ class Provider(object):
     OPENSTACK = 31
     SKALICLOUD = 32
     SERVERLOVE = 33
+    IPMI = 34
+    ESX = 35
 
 class NodeState(object):
     """
