@@ -153,4 +153,16 @@ class ESXNodeDriver(NodeDriver):
         else:
             print "node is not running!"
             return False
-           
+
+    def get_vnc_port(self, node):
+        cmd = self._get_vmware_cmd("getguestinfo RemoteDisplay.vnc.port", node)
+        (status, output) = commands.getstatusoutput(cmd)
+        if status == 0:
+            port = output.split(" = ")[-1]
+            if(port.isdigit()):
+                return port
+            else:
+                return ""
+        else:
+            return ""
+
