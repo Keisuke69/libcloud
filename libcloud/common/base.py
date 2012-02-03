@@ -36,11 +36,13 @@ from libcloud.utils.py3 import StringIO
 from libcloud.utils.py3 import b
 
 from libcloud.utils.misc import lowercase_keys
+from libcloud.utils.compression import decompress_data
 from libcloud.common.types import LibcloudError, MalformedResponseError
 
 from libcloud.httplib_ssl import LibcloudHTTPSConnection
 
 LibcloudHTTPConnection = httplib.HTTPConnection
+
 
 class Response(object):
     """
@@ -57,7 +59,7 @@ class Response(object):
     parse_zero_length_body = False
 
     def __init__(self, response, connection):
-        self.body = response.read().strip()
+        self.body = self._decompress_response(response=response)
 
         if PY3:
             self.body = b(self.body).decode('utf-8')
@@ -105,6 +107,26 @@ class Response(object):
         @return: C{True} or C{False}
         """
         return self.status == httplib.OK or self.status == httplib.CREATED
+
+    def _decompress_response(self, response):
+        """
+        Decompress a response body if it is using deflate or gzip encoding.
+
+        @return: Decompressed response
+        """
+        headers = lowercase_keys(dict(response.getheaders()))
+        encoding = headers.get('content-encoding', None)
+
+        body = response.read()
+
+        if encoding in  ['zlib', 'deflate']:
+            body = decompress_data('zlib', body)
+        elif encoding in ['gzip', 'x-gzip']:
+            body = decompress_data('gzip', body)
+        else:
+            body = body.strip()
+
+        return body
 
 
 class JsonResponse(Response):
@@ -242,6 +264,8 @@ class LoggingConnection():
         # TODO: in python 2.6, body can be a file-like object.
         if body is not None and len(body) > 0:
             cmd.extend(["--data-binary", pquote(body)])
+
+        cmd.extend(["--compress"])
 
         cmd.extend([pquote("https://%s:%d%s" % (self.host, self.port, url))])
         return " ".join(cmd)
@@ -464,6 +488,9 @@ class Connection(object):
         headers = self.add_default_headers(headers)
         # We always send a user-agent header
         headers.update({'User-Agent': self._user_agent()})
+
+        # Indicate that support gzip and deflate compression
+        headers.update({'Accept-Encoding': 'gzip,deflate'})
 
         p = int(self.port)
 
