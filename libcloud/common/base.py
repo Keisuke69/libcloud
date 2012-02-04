@@ -33,6 +33,7 @@ from libcloud.utils.py3 import httplib
 from libcloud.utils.py3 import urlparse
 from libcloud.utils.py3 import urlencode
 from libcloud.utils.py3 import StringIO
+from libcloud.utils.py3 import u
 from libcloud.utils.py3 import b
 
 from libcloud.utils.misc import lowercase_keys
@@ -116,6 +117,11 @@ class Response(object):
         """
         headers = lowercase_keys(dict(response.getheaders()))
         encoding = headers.get('content-encoding', None)
+
+        original_data = getattr(response, '_original_data', None)
+
+        if original_data is not None:
+            return original_data
 
         body = response.read()
 
@@ -235,22 +241,41 @@ class LoggingConnection():
             def __init__(self, s):
                 self.s = s
 
-            def makefile(self, mode, foo):
-                return StringIO(self.s)
+            def makefile(self, *args, **kwargs):
+                if PY3:
+                    from io import BytesIO
+                    cls = BytesIO
+                else:
+                    cls = StringIO
+
+                return cls(b(self.s))
         rr = r
+        original_data = body
+        headers = lowercase_keys(dict(r.getheaders()))
+
+        encoding = headers.get('content-encoding', None)
+
+        if encoding in  ['zlib', 'deflate']:
+            body = decompress_data('zlib', body)
+        elif encoding in ['gzip', 'x-gzip']:
+            body = decompress_data('gzip', body)
+
+
         if r.chunked:
             ht += "%x\r\n" % (len(body))
-            ht += body
+            ht += u(body)
             ht += "\r\n0\r\n"
         else:
-            ht += body
-        rr = httplib.HTTPResponse(fakesock(ht),
+            ht += u(body)
+        rr = httplib.HTTPResponse(sock=fakesock(ht),
                                   method=r._method,
                                   debuglevel=r.debuglevel)
         rr.begin()
         rv += ht
         rv += ("\n# -------- end %d:%d response ----------\n"
                % (id(self), id(r)))
+
+        rr._original_data = body
         return (rr, rv)
 
     def _log_curl(self, method, url, body, headers):
