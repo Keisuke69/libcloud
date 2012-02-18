@@ -245,7 +245,7 @@ class RackspaceConnection(OpenStackBaseConnection, PollingConnection):
         if method in ('POST', 'PUT'):
             headers['Content-Type'] = 'application/json'
         if method == 'GET':
-            params['cache-busing'] = binascii.hexlify(os.urandom(8))
+            self._add_cache_busting_to_params(params)
 
         return super(RackspaceConnection, self).request(action=action,
                 params=params, data=data, method=method, headers=headers)
@@ -417,6 +417,24 @@ class RackspaceLBDriver(Driver):
         resp = self.connection.request(uri, method='POST',
                 data=json.dumps(member_object))
         return self._to_members(resp.object)[0]
+
+    def ex_balancer_attach_members(self, balancer, members):
+        """
+        Attaches a list of members to a load balancer.
+
+        @param balancer: The Balancer to which members will be attached.
+        @type balancer: C{Balancer}
+
+        @param members: A list of Members to attach.
+        @type members: C{list}
+        """
+        member_objects = {"nodes": [self._member_attributes(member) for member
+                                    in members]}
+
+        uri = '/loadbalancers/%s/nodes' % (balancer.id)
+        resp = self.connection.request(uri, method='POST',
+                data=json.dumps(member_objects))
+        return self._to_members(resp.object)
 
     def balancer_detach_member(self, balancer, member):
         # Loadbalancer always needs to have at least 1 member.
