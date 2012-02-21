@@ -49,6 +49,10 @@ DRIVERS = {
         ('libcloud.compute.drivers.elastichosts', 'ElasticHostsUK2NodeDriver'),
     Provider.ELASTICHOSTS_US1:
         ('libcloud.compute.drivers.elastichosts', 'ElasticHostsUS1NodeDriver'),
+    Provider.ELASTICHOSTS_US2:
+        ('libcloud.compute.drivers.elastichosts', 'ElasticHostsUS2NodeDriver'),
+    Provider.ELASTICHOSTS_CA1:
+        ('libcloud.compute.drivers.elastichosts', 'ElasticHostsCA1NodeDriver'),
     Provider.SKALICLOUD:
         ('libcloud.compute.drivers.skalicloud', 'SkaliCloudNodeDriver'),
     Provider.SERVERLOVE:
@@ -104,7 +108,9 @@ DRIVERS = {
     Provider.RACKSPACE_NOVA_BETA:
         ('libcloud.compute.drivers.rackspacenova', 'RackspaceNovaBetaNodeDriver'),
     Provider.RACKSPACE_NOVA_DFW:
-        ('libcloud.compute.drivers.rackspacenova', 'RackspaceNovaDfwNodeDriver')
+        ('libcloud.compute.drivers.rackspacenova', 'RackspaceNovaDfwNodeDriver'),
+    Provider.LIBVIRT:
+        ('libcloud.compute.drivers.libvirt_driver', 'LinodeNodeDriver')
 }
 
 
