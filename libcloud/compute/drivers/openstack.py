@@ -27,6 +27,8 @@ import os
 
 import warnings
 
+from itertools import chain
+
 from libcloud.utils.py3 import httplib
 from libcloud.utils.py3 import b
 from libcloud.utils.py3 import next
@@ -125,17 +127,10 @@ class OpenStackResponse(Response):
 
 
 class OpenStackComputeConnection(OpenStackBaseConnection):
-
-    def get_endpoint(self):
-
-        # default config for http://devstack.org/
-        ep = self.service_catalog.get_endpoint(service_type='compute',
-                                               name='nova',
-                                               region='RegionOne')
-        if 'publicURL' in ep:
-            return ep['publicURL']
-
-        raise LibcloudError('Could not find specified endpoint')
+    # default config for http://devstack.org/
+    service_type = 'compute'
+    service_name = 'nova'
+    service_region = 'RegionOne'
 
     def request(self, action, params=None, data='', headers=None,
                 method='GET'):
@@ -728,13 +723,14 @@ class OpenStack_1_0_NodeDriver(OpenStackNodeDriver):
                                       servers=servers)
 
     def _to_ip_addresses(self, el):
-        return OpenStack_1_0_NodeIpAddresses(
-            [ip.get('addr') for ip in
-             findall(findall(el, 'public', self.XML_NAMESPACE)[0],
-             'ip', self.XML_NAMESPACE)],
-            [ip.get('addr') for ip in
-             findall(findall(el, 'private', self.XML_NAMESPACE)[0],
-             'ip', self.XML_NAMESPACE)])
+        public_ips = [ip.get('addr') for ip in findall(findall(el, 'public',
+                                                 self.XML_NAMESPACE)[0],
+                                                 'ip', self.XML_NAMESPACE)]
+        private_ips = [ip.get('addr') for ip in findall(findall(el, 'private',
+                                                 self.XML_NAMESPACE)[0],
+                                                 'ip', self.XML_NAMESPACE)]
+
+        return OpenStack_1_0_NodeIpAddresses(public_ips, private_ips)
 
     def _get_size_price(self, size_id):
         try:
@@ -1033,7 +1029,8 @@ class OpenStack_1_1_NodeDriver(OpenStackNodeDriver):
             state=self.NODE_STATE_MAP.get(api_node['status'],
                                           NodeState.UNKNOWN),
             public_ips=[addr_desc['addr'] for addr_desc in
-                       api_node['addresses'].get('public', [])],
+                       chain(api_node['addresses'].get('public', []),
+                           api_node['addresses'].get('internet', []))],
             private_ips=[addr_desc['addr'] for addr_desc in
                         api_node['addresses'].get('private', [])],
             driver=self,
