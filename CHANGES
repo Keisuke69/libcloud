@@ -44,6 +44,14 @@ Changes with Apache Libcloud in development:
         - Allow reverse dns updates for cloud ip extensions
       [Neil Wilson, Tomaz Muraus]
 
+    - Add ex_userdata argument to the OpenStack 1.1 driver.
+      [Jay Doane]
+
+
+    - Modify Vmware vCloud driver and implement new features
+      for the vCloud version 1.5.
+      [Michal Galet, Sengor Kusturica]
+
   *) Storage
 
     - Large object upload support for CloudFiles driver
