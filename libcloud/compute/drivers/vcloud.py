@@ -23,6 +23,7 @@ import os
 from libcloud.utils.py3 import httplib
 from libcloud.utils.py3 import urlparse
 from libcloud.utils.py3 import b
+from libcloud.utils.py3 import next
 
 urlparse = urlparse.urlparse
 
@@ -991,7 +992,6 @@ class VCloud_1_5_NodeDriver(VCloudNodeDriver):
         """
         name = kwargs['name']
         image = kwargs['image']
-        size = kwargs.get('size', None)
         ex_vm_names = kwargs.get('ex_vm_names')
         ex_vm_cpu = kwargs.get('ex_vm_cpu')
         ex_vm_memory = kwargs.get('ex_vm_memory')
