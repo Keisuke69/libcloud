@@ -1,6 +1,6 @@
                                    -*- coding: utf-8 -*-
 
-Changes with Apache Libcloud in development:
+Changes with Apache Libcloud 0.10.0:
 
   *) Compute:
 
@@ -8,11 +8,11 @@ Changes with Apache Libcloud in development:
       [Jerry Chen]
 
     - Add 'ex_keyname' argument to the create_node method in the OpenStack
-      driver.
+      driver. ; LIBCLOUD-177
       [Jay Doane]
 
     - Fix a problem in deploy_node - make it work with providers which
-      don'  instantly return created node in the list_node response.
+      don't  instantly return created node in the list_node response.
       Also add __str__ and __repr__ method to DeploymentError so the
       error message is more useful.
       [Jouke Waleson, Tomaz Muraus]
@@ -21,7 +21,7 @@ Changes with Apache Libcloud in development:
       deploy_node. ; LIBCLOUD-179
       [Neil Wilson]
 
-    - Add Joyent driver.
+    - Add Joyent compute driver.
       [Tomaz Muraus]
 
     - Store auth token expire times on the connection class in the attribute
@@ -65,7 +65,8 @@ Changes with Apache Libcloud in development:
       is not specified when calling deploy_node. ; LIBCLOUD-182
       [Tomaz Muraus]
 
-    - Add ex_rescue and ex_unrescue method to OpenStack 1.1 driver.
+    - Add ex_rescue and ex_unrescue method to OpenStack 1.1 driver. ;
+      LIBCLOUD-193
       [Shawn Smith] 
 
     - Include 'password' in the node extra dictionary when calling deploy_node
@@ -73,8 +74,8 @@ Changes with Apache Libcloud in development:
       [Juan Carlos Moreno]
 
     - Add FileDeployment class to libcloud.compute.deployment module. This can
-      be used as a replacemtnt for ex_files argument if the provider supports
-      deployment functionality.
+      be used as a replacement for ex_files argument if the provider supports
+      deployment functionality. ; LIBCLOUD-190
       [Jay Doane]
 
   *) Storage
