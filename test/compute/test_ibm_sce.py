@@ -16,7 +16,7 @@ from libcloud.utils.py3 import httplib
 import sys
 
 from libcloud.compute.types import InvalidCredsError
-from libcloud.compute.drivers.ibm_sbc import IBMNodeDriver as IBM
+from libcloud.compute.drivers.ibm_sce import IBMNodeDriver as IBM
 from libcloud.compute.base import Node, NodeImage, NodeSize, NodeLocation
 
 from test import MockHttp
@@ -74,10 +74,10 @@ class IBMTests(unittest.TestCase, TestCaseMixin):
 
     def test_list_locations(self):
         ret = self.driver.list_locations()
-        self.assertEquals(len(ret), 1)
-        self.assertEquals(ret[0].id, '1')
-        self.assertEquals(ret[0].name, 'US North East: Poughkeepsie, NY')
-        self.assertEquals(ret[0].country, 'US')
+        self.assertEquals(len(ret), 6)
+        self.assertEquals(ret[0].id, '41')
+        self.assertEquals(ret[0].name, 'Raleigh')
+        self.assertEquals(ret[0].country, 'U.S.A')
 
     def test_create_node(self):
         # Test creation of node
@@ -156,7 +156,7 @@ class IBMTests(unittest.TestCase, TestCaseMixin):
             self.fail('test should have thrown')
 
 class IBMMockHttp(MockHttp):
-    fixtures = ComputeFileFixtures('ibm_sbc')
+    fixtures = ComputeFileFixtures('ibm_sce')
 
     def _computecloud_enterprise_api_rest_20100331_instances(self, method, url, body, headers):
         body = self.fixtures.load('instances.xml')
