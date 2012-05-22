@@ -475,7 +475,8 @@ class EC2NodeDriver(NodeDriver):
         nodes = []
         for rs in findall(element=elem, xpath='reservationSet/item',
                           namespace=NAMESPACE):
-            groups = [g.findtext('')
+            #groups = [g.findtext('')
+            groups = [g.text
                       for g in findall(element=rs,
                                        xpath='groupSet/item/groupId',
                                        namespace=NAMESPACE)]

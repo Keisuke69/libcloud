@@ -16,6 +16,7 @@
 import sys
 import ssl
 import time
+import os
 
 from xml.etree import ElementTree as ET
 from pipes import quote as pquote
@@ -446,6 +447,16 @@ class Connection(object):
         # connections in cleartext when you setup the proxy to do SSL
         # for you
         #connection = self.conn_classes[False]("127.0.0.1", 8080)
+        proxy_env = "https_proxy" if port == 443 else "http_proxy"
+        proxy_url = os.environ.get(proxy_env)
+        if proxy_url:
+            proxy = urlparse.urlparse(proxy_url)
+            if proxy.hostname and proxy.port:
+                if port == 443:
+                    connection = self.conn_classes[secure](proxy.hostname, proxy.port)
+                    connection.set_tunnel(**kwargs)
+                else:
+                    connection = self.conn_classes[False](proxy.hostname, proxy.port)
 
         self.connection = connection
 

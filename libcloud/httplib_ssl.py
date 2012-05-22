@@ -54,7 +54,8 @@ class LibcloudHTTPSConnection(httplib.HTTPSConnection):
         if self.verify:
             self._setup_ca_cert()
         else:
-            warnings.warn(libcloud.security.VERIFY_SSL_DISABLED_MSG)
+            #warnings.warn(libcloud.security.VERIFY_SSL_DISABLED_MSG)
+            pass
 
     def _setup_ca_cert(self):
         """Setup CA Certs
