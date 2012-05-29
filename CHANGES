@@ -7,6 +7,10 @@ Changes with Apache Libcloud in development:
       ; LIBCLOUD-199
       [Chris Gilmer]
 
+    - Add time.sleep(wait_period) to _ssh_client_connect to prevent busy loops
+      when we immediately can't connect to a server. ; LIBCLOUD-197
+      [Jay Doane]
+
 Changes with Apache Libcloud 0.10.1:
 
   *) General:
@@ -40,7 +44,7 @@ Changes with Apache Libcloud 0.10.1:
     - Fix a problem in deploy_node - make it work with providers which
       don't  instantly return created node in the list_node response.
       Also add __str__ and __repr__ method to DeploymentError so the
-      error message is more useful.
+      error message is more useful. ; LIBCLOUD-176
       [Jouke Waleson, Tomaz Muraus]
 
     - Add 'ssh_key' feature to Brigthbox driver. This way it works with
@@ -147,6 +151,10 @@ Changes with Apache Libcloud 0.9.1:
       different providers without needing to subclass. ; LIBCLOUD-173
       [James E. Blair]
 
+    - Fix a bug with handling compressed responses in the Linode driver. ;
+      LIBCLOUD-158
+      [Ben Agricola]
+
   *) Compute:
 
     - Add new RackspaceNovaBeta and RackspaveNovaDfw driver based on the
@@ -185,7 +193,7 @@ Changes with Apache Libcloud 0.9.1:
       [Tomaz Muraus]
 
     - Allow user to re-use auth tokens and pass 'ex_force_auth_token' keyword
-      argument to the OpenStack driver constructor.
+      argument to the OpenStack driver constructor. ; LIBCLOUD-164
       [Dave King]
 
     - Add new experimental libvirt driver.
