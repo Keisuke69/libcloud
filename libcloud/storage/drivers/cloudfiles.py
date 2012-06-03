@@ -108,28 +108,29 @@ class CloudFilesConnection(OpenStackBaseConnection):
                                                    **kwargs)
         self.api_version = API_VERSION
         self.accept_format = 'application/json'
+        self.cdn_request = False
 
-    def get_endpoint(self, cdn_request=False):
+    def get_endpoint(self):
         # First, we parse out both files and cdn endpoints
         # for each auth version
         if '2.0' in self._auth_version:
-            ep = self.service_catalog.get_endpoint(service_type='object-store',
-                                                   name='cloudFiles',
-                                                   region='ORD')
-            cdn_ep = self.service_catalog.get_endpoint(
+            eps = self.service_catalog.get_endpoints(service_type='object-store',
+                                                     name='cloudFiles')
+            cdn_eps = self.service_catalog.get_endpoints(
                     service_type='object-store',
-                    name='cloudFilesCDN',
-                    region='ORD')
+                    name='cloudFilesCDN')
         elif ('1.1' in self._auth_version) or ('1.0' in self._auth_version):
-            ep = self.service_catalog.get_endpoint(name='cloudFiles',
-                                                   region='ORD')
-            cdn_ep = self.service_catalog.get_endpoint(name='cloudFilesCDN',
-                                                       region='ORD')
+            eps = self.service_catalog.get_endpoints(name='cloudFiles')
+            cdn_eps = self.service_catalog.get_endpoints(name='cloudFilesCDN')
 
         # if this is a CDN request, return the cdn url instead
-        if cdn_request:
-            ep = cdn_ep
+        if self.cdn_request:
+            eps = cdn_eps
 
+        if len(eps) == 0:
+            raise LibcloudError('Could not find specified endpoint')
+
+        ep = eps[0]
         if 'publicURL' in ep:
             return ep['publicURL']
         else:
@@ -142,16 +143,7 @@ class CloudFilesConnection(OpenStackBaseConnection):
         if not params:
             params = {}
 
-        # FIXME: Massive hack.
-        # This driver dynamically changes the url in its connection,
-        # based on arguments passed to request(). As such, we have to
-        # manually check and reset connection params each request
-        self._populate_hosts_and_request_paths()
-        if not self._ex_force_base_url:
-            self._reset_connection_params(self.get_endpoint(cdn_request))
-        else:
-            self._reset_connection_params(self._ex_force_base_url)
-
+        self.cdn_request = cdn_request
         params['format'] = 'json'
 
         if method in ['POST', 'PUT'] and 'Content-Type' not in headers:
@@ -162,10 +154,6 @@ class CloudFilesConnection(OpenStackBaseConnection):
             params=params, data=data,
             method=method, headers=headers,
             raw=raw)
-
-    def _reset_connection_params(self, endpoint_url):
-        (self.host, self.port, self.secure, self.request_path) = \
-                self._tuple_from_url(endpoint_url)
 
 
 class CloudFilesUSConnection(CloudFilesConnection):
@@ -286,10 +274,16 @@ class CloudFilesStorageDriver(StorageDriver, OpenStackDriverMixin):
         container_cdn_url = self.get_container_cdn_url(container=obj.container)
         return '%s/%s' % (container_cdn_url, obj.name)
 
-    def enable_container_cdn(self, container):
+    def enable_container_cdn(self, container, ex_ttl=None):
         container_name = container.name
+        headers = {'X-CDN-Enabled': 'True'}
+
+        if ex_ttl:
+            headers['X-TTL'] = ex_ttl
+
         response = self.connection.request('/%s' % (container_name),
                                            method='PUT',
+                                           headers=headers,
                                            cdn_request=True)
 
         if response.status in [ httplib.CREATED, httplib.ACCEPTED ]:

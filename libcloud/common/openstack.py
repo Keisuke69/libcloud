@@ -259,6 +259,19 @@ class OpenStackServiceCatalog(object):
             raise LibcloudError('auth version "%s" not supported'
                                 % (self._auth_version))
 
+    def get_endpoints(self, service_type=None, name=None):
+        eps = []
+
+        if '2.0' in self._auth_version:
+            endpoints = self._service_catalog.get(service_type, {}).get(name, {})
+        elif ('1.1' in self._auth_version) or ('1.0' in self._auth_version):
+            endpoints = self._service_catalog.get(name, {})
+
+        for regionName, values in endpoints.items():
+            eps.append(values[0])
+
+        return eps
+
     def get_endpoint(self, service_type=None, name=None, region=None):
 
         if '2.0' in self._auth_version:
@@ -434,7 +447,6 @@ class OpenStackBaseConnection(ConnectionUserAndKey):
         return super(OpenStackBaseConnection, self).morph_action_hook(action)
 
     def request(self, **kwargs):
-        self._populate_hosts_and_request_paths()
         return super(OpenStackBaseConnection, self).request(**kwargs)
 
     def _populate_hosts_and_request_paths(self):
