@@ -115,6 +115,7 @@ class Provider(object):
     ELASTICHOSTS_CA1 = 44
     JOYENT = 45
     VCL = 46
+    VSPHERE = 47
 
 
 class NodeState(object):
