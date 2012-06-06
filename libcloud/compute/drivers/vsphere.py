@@ -5,7 +5,7 @@ VMware vSphere driver
 #from libcloud.common.base import XmlResponse, ConnectionUserAndKey
 #from libcloud.common.types import InvalidCredsError, LibcloudError
 from libcloud.compute.providers import Provider
-#from libcloud.compute.types import NodeState
+from libcloud.compute.types import NodeState
 from libcloud.compute.base import Node, NodeDriver, NodeLocation
 #from libcloud.compute.base import NodeSize, NodeImage, NodeAuthPassword
 from psphere.client import Client
@@ -16,6 +16,17 @@ class VSphereNodeDriver(NodeDriver):
     VMware vSphere node driver
     """
 
+    NODE_STATE_MAP = {
+        'poweredOn': NodeState.RUNNING,
+        'poweredOff': NodeState.UNKNOWN,
+        'suspended': NodeState.PENDING,
+    }
+    NODE_STATUS_MAP = {
+        'poweredOn': 'running',
+        'poweredOff': 'stopped',
+        'suspended': 'suspended',
+    }
+
     type = Provider.VSPHERE
 
     def __init__(self, key, secret=None, secure=True, host=None):
@@ -25,14 +36,6 @@ class VSphereNodeDriver(NodeDriver):
         self.connection = Client(server = host, username = key, password = secret)
 
     def _to_node(self, vm):
-        if vm.runtime.powerState == "poweredOn":
-            state = 'running'
-        elif vm.runtime.powerState == "poweredOff":
-            state = 'stopped'
-        elif vm.runtime.powerState == "suspended":
-            state = 'suspended'
-        else:
-            state = 'unknown'
         vnc_enabled = False
         for config in vm.config.extraConfig:
             if config.key == "RemoteDisplay.vnc.enabled" and config.value.lower() == "true":
@@ -40,12 +43,13 @@ class VSphereNodeDriver(NodeDriver):
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
-            state = state,
+            state = self.NODE_STATE_MAP[vm.runtime.powerState],
             public_ips = [],
             private_ips = [],
             driver = self,
             extra = {
                 'managedObjectReference': vm,
+                'status': self.NODE_STATUS_MAP[vm.runtime.powerState],
                 'cpu': vm.summary.config.numCpu,
                 'memory': vm.summary.config.memorySizeMB * 1024**2,
                 'vmPathName': vm.summary.config.vmPathName,

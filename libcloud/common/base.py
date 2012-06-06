@@ -454,6 +454,10 @@ class Connection(object):
             if proxy.hostname and proxy.port:
                 if port == 443:
                     connection = self.conn_classes[secure](proxy.hostname, proxy.port)
+                    if proxy.username and proxy.password:
+                        headers = kwargs.get('headers', [])
+                        headers.append("Proxy-Authorization: Basic " + base64.b64encode(proxy.username + ":" + proxy.password))
+                        kwargs["headers"] = headers
                     connection.set_tunnel(**kwargs)
                 else:
                     connection = self.conn_classes[False](proxy.hostname, proxy.port)
