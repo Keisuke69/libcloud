@@ -18,8 +18,8 @@ class VSphereNodeDriver(NodeDriver):
 
     NODE_STATE_MAP = {
         'poweredOn': NodeState.RUNNING,
-        'poweredOff': NodeState.UNKNOWN,
-        'suspended': NodeState.PENDING,
+        'poweredOff': NodeState.TERMINATED,
+        'suspended': NodeState.TERMINATED,
     }
     NODE_STATUS_MAP = {
         'poweredOn': 'running',
@@ -40,11 +40,18 @@ class VSphereNodeDriver(NodeDriver):
         for config in vm.config.extraConfig:
             if config.key == "RemoteDisplay.vnc.enabled" and config.value.lower() == "true":
                 vnc_enabled = True
+        public_ips = []
+        if vm.guest.toolsRunningStatus == "guestToolsRunning" and hasattr(vm.guest, "net"):
+            for network in vm.guest.net:
+                if hasattr(network, "ipConfig"):
+                    public_ips.extend([ip.ipAddress for ip in network.ipConfig.ipAddress if ip.state == "preferred"])
+                elif hasattr(network, "ipAddress"):
+                    public_ips.extend([ip for ip in network.ipAddress])
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
             state = self.NODE_STATE_MAP[vm.runtime.powerState],
-            public_ips = [],
+            public_ips = public_ips,
             private_ips = [],
             driver = self,
             extra = {
@@ -54,6 +61,8 @@ class VSphereNodeDriver(NodeDriver):
                 'memory': vm.summary.config.memorySizeMB * 1024**2,
                 'vmPathName': vm.summary.config.vmPathName,
                 'vncEnabled': vnc_enabled,
+                'toolsRunningStatus': vm.guest.toolsRunningStatus,
+                'toolsVersionStatus': vm.guest.toolsVersionStatus,
             }
         )
         return n
