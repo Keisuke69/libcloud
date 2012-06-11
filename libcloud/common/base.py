@@ -17,6 +17,7 @@ import sys
 import ssl
 import time
 import os
+import base64
 
 from xml.etree import ElementTree as ET
 from pipes import quote as pquote
@@ -456,7 +457,7 @@ class Connection(object):
                     connection = self.conn_classes[secure](proxy.hostname, proxy.port)
                     if proxy.username and proxy.password:
                         headers = kwargs.get('headers', [])
-                        headers.append("Proxy-Authorization: Basic " + base64.b64encode(proxy.username + ":" + proxy.password))
+                        headers = {"Proxy-Authorization":"Basic " + base64.b64encode(proxy.username + ":" + proxy.password)}
                         kwargs["headers"] = headers
                     connection.set_tunnel(**kwargs)
                 else:
