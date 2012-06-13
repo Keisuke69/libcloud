@@ -47,6 +47,12 @@ class VSphereNodeDriver(NodeDriver):
                     public_ips.extend([ip.ipAddress for ip in network.ipConfig.ipAddress if ip.state == "preferred"])
                 elif hasattr(network, "ipAddress"):
                     public_ips.extend([ip for ip in network.ipAddress])
+        if self.NODE_STATE_MAP[vm.runtime.powerState] == NodeState.RUNNING:
+            cpu_usage = vm.summary.quickStats.overallCpuUsage
+            memory_usage = vm.summary.quickStats.guestMemoryUsage * 1024**2
+        else:
+            cpu_usage = 0
+            memory_usage = 0
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
@@ -63,6 +69,9 @@ class VSphereNodeDriver(NodeDriver):
                 'vncEnabled': vnc_enabled,
                 'toolsRunningStatus': vm.guest.toolsRunningStatus,
                 'toolsVersionStatus': vm.guest.toolsVersionStatus,
+                'max_cpu_usage': vm.summary.runtime.maxCpuUsage,
+                'cpu_usage': cpu_usage,
+                'memory_usage': memory_usage,
             }
         )
         return n
@@ -81,6 +90,9 @@ class VSphereNodeDriver(NodeDriver):
             'cpu': host.hardware.cpuInfo.numCpuThreads,
             'memory': host.hardware.memorySize,
             'datastores': datastores,
+            'max_cpu_usage': host.summary.hardware.cpuMhz * host.summary.hardware.numCpuCores,
+            'cpu_usage': host.summary.quickStats.overallCpuUsage,
+            'memory_usage': host.summary.quickStats.overallMemoryUsage * 1024**2,
         }
         return hardware_profile
 
