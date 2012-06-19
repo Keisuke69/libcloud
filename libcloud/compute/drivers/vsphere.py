@@ -47,12 +47,9 @@ class VSphereNodeDriver(NodeDriver):
                     public_ips.extend([ip.ipAddress for ip in network.ipConfig.ipAddress if ip.state == "preferred"])
                 elif hasattr(network, "ipAddress"):
                     public_ips.extend([ip for ip in network.ipAddress])
-        if self.NODE_STATE_MAP[vm.runtime.powerState] == NodeState.RUNNING:
-            cpu_usage = vm.summary.quickStats.overallCpuUsage
-            memory_usage = vm.summary.quickStats.guestMemoryUsage * 1024**2
-        else:
-            cpu_usage = 0
-            memory_usage = 0
+        quickStats = vm.summary.quickStats
+        cpu_usage = quickStats.overallCpuUsage if hasattr(quickStats, "overallCpuUsage") else 0
+        memory_usage = quickStats.guestMemoryUsage * 1024**2 if hasattr(quickStats, "guestMemoryUsage") else 0
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
@@ -96,33 +93,35 @@ class VSphereNodeDriver(NodeDriver):
         }
         return hardware_profile
 
-    def list_nodes(self):
+    def list_nodes(self, ex_node_ids = None):
         nodes = []
         hosts = HostSystem.all(self.connection)
         for host in hosts:
             for vm in host.vm:
-                nodes.append(self._to_node(vm))
+                node = self._to_node(vm)
+                if not ex_node_ids or node.id in ex_node_ids:
+                    nodes.append(node)
         return nodes
 
     def reboot_node(self, node):
         vm = node.extra['managedObjectReference']
         task = vm.ResetVM_Task()
-        return not task.info.error
+        return task.info.state != "error"
 
     def ex_start_node(self, node):
         vm = node.extra['managedObjectReference']
         task = vm.PowerOnVM_Task()
-        return not task.info.error
+        return task.info.state != "error"
 
     def ex_stop_node(self, node):
         vm = node.extra['managedObjectReference']
         task = vm.PowerOffVM_Task()
-        return not task.info.error
+        return task.info.state != "error"
 
     def ex_suspend_node(self, node):
         vm = node.extra['managedObjectReference']
         task = vm.SuspendVM_Task()
-        return not task.info.error
+        return task.info.state != "error"
 
     def ex_hardware_profiles(self):
         hardware_profiles = []
