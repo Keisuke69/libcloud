@@ -10,6 +10,7 @@ from libcloud.compute.base import Node, NodeDriver, NodeLocation
 #from libcloud.compute.base import NodeSize, NodeImage, NodeAuthPassword
 from psphere.client import Client
 from psphere.managedobjects import HostSystem
+import suds
 
 class VSphereNodeDriver(NodeDriver):
     """
@@ -64,8 +65,8 @@ class VSphereNodeDriver(NodeDriver):
                 'memory': vm.summary.config.memorySizeMB * 1024**2,
                 'vmPathName': vm.summary.config.vmPathName,
                 'vncEnabled': vnc_enabled,
-                'toolsRunningStatus': vm.guest.toolsRunningStatus,
-                'toolsVersionStatus': vm.guest.toolsVersionStatus,
+                'toolsRunningStatus': str(vm.guest.toolsRunningStatus),
+                'toolsVersionStatus': str(vm.guest.toolsVersionStatus),
                 'max_cpu_usage': vm.summary.runtime.maxCpuUsage,
                 'cpu_usage': cpu_usage,
                 'memory_usage': memory_usage,
@@ -105,23 +106,51 @@ class VSphereNodeDriver(NodeDriver):
 
     def reboot_node(self, node):
         vm = node.extra['managedObjectReference']
-        task = vm.ResetVM_Task()
-        return task.info.state != "error"
+        try:
+            vm.RebootGuest()
+            return True
+        except suds.WebFault:
+            return False
+
+    def destroy_node(self, node):
+        vm = node.extra['managedObjectReference']
+        try:
+            vm.UnregisterVM()
+            return True
+        except suds.WebFault:
+            return False
 
     def ex_start_node(self, node):
         vm = node.extra['managedObjectReference']
-        task = vm.PowerOnVM_Task()
-        return task.info.state != "error"
+        try:
+            task = vm.PowerOnVM_Task()
+            return task.info.state != "error"
+        except suds.WebFault:
+            return False
 
     def ex_stop_node(self, node):
         vm = node.extra['managedObjectReference']
-        task = vm.PowerOffVM_Task()
-        return task.info.state != "error"
+        try:
+            task = vm.PowerOffVM_Task()
+            return task.info.state != "error"
+        except suds.WebFault:
+            return False
+
+    def ex_shutdown_node(self, node):
+        vm = node.extra['managedObjectReference']
+        try:
+            vm.ShutdownGuest()
+            return True
+        except suds.WebFault:
+            return False
 
     def ex_suspend_node(self, node):
         vm = node.extra['managedObjectReference']
-        task = vm.SuspendVM_Task()
-        return task.info.state != "error"
+        try:
+            task = vm.SuspendVM_Task()
+            return task.info.state != "error"
+        except suds.WebFault:
+            return False
 
     def ex_hardware_profiles(self):
         hardware_profiles = []
