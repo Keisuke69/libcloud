@@ -51,6 +51,20 @@ class VSphereNodeDriver(NodeDriver):
         quickStats = vm.summary.quickStats
         cpu_usage = quickStats.overallCpuUsage if hasattr(quickStats, "overallCpuUsage") else 0
         memory_usage = quickStats.guestMemoryUsage * 1024**2 if hasattr(quickStats, "guestMemoryUsage") else 0
+        if hasattr(vm.runtime, "question"):
+            stucked = 1
+            choice = [{"key": info.key, "label": info.label, "summary": info.summary} for info in vm.runtime.question.choice.choiceInfo]
+            if hasattr(vm.runtime.question, "message"):
+                question = "Message: "
+                for message in vm.runtime.question.message:
+                    if hasattr(message, "text"):
+                        question += message.text + "\n"
+            else:
+                question = vm.runtime.question.text
+        else:
+            stucked = 0
+            question = None
+            choice = None
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
@@ -70,6 +84,9 @@ class VSphereNodeDriver(NodeDriver):
                 'max_cpu_usage': vm.summary.runtime.maxCpuUsage,
                 'cpu_usage': cpu_usage,
                 'memory_usage': memory_usage,
+                'stucked': stucked,
+                'question': question,
+                'choice': choice,
             }
         )
         return n
