@@ -53,7 +53,8 @@ class VSphereNodeDriver(NodeDriver):
         memory_usage = quickStats.guestMemoryUsage * 1024**2 if hasattr(quickStats, "guestMemoryUsage") else 0
         if hasattr(vm.runtime, "question"):
             stucked = 1
-            choice = [{"key": info.key, "label": info.label, "summary": info.summary} for info in vm.runtime.question.choice.choiceInfo]
+            question_id = vm.runtime.question.id
+            choices = [{"key": info.key, "label": info.label, "summary": info.summary} for info in vm.runtime.question.choice.choiceInfo]
             if hasattr(vm.runtime.question, "message"):
                 question = "Message: "
                 for message in vm.runtime.question.message:
@@ -63,8 +64,9 @@ class VSphereNodeDriver(NodeDriver):
                 question = vm.runtime.question.text
         else:
             stucked = 0
+            question_id = None
             question = None
-            choice = None
+            choices = None
         n = Node(
             id = vm.config.uuid,
             name = vm.name,
@@ -84,9 +86,11 @@ class VSphereNodeDriver(NodeDriver):
                 'max_cpu_usage': vm.summary.runtime.maxCpuUsage,
                 'cpu_usage': cpu_usage,
                 'memory_usage': memory_usage,
+                'vmpath': vm.summary.config.vmPathName,
                 'stucked': stucked,
+                'question_id': question_id,
                 'question': question,
-                'choice': choice,
+                'choices': choices,
             }
         )
         return n
@@ -101,6 +105,7 @@ class VSphereNodeDriver(NodeDriver):
                 'type': ds.summary.type,
             })
         hardware_profile = {
+            'id': host.summary.hardware.uuid,
             'name': host.name,
             'cpu': host.hardware.cpuInfo.numCpuThreads,
             'memory': host.hardware.memorySize,
@@ -111,15 +116,20 @@ class VSphereNodeDriver(NodeDriver):
         }
         return hardware_profile
 
-    def list_nodes(self, ex_node_ids = None):
+    def list_nodes(self, ex_node_ids = None, ex_vmpath = None):
         nodes = []
         hosts = HostSystem.all(self.connection)
         for host in hosts:
             for vm in host.vm:
                 node = self._to_node(vm)
-                if not ex_node_ids or node.id in ex_node_ids:
-                    nodes.append(node)
-        return nodes
+                if ex_node_ids is None or node.id in ex_node_ids:
+                    if ex_vmpath is None or vm.summary.config.vmPathName == ex_vmpath:
+                        nodes.append(node)
+        uuids = [node.id for node in nodes]
+        if ex_node_ids is not None and len(uuids) != len(set(uuids)):
+            raise Exception("Cannot identify target node. Duplicate uuid exists") 
+        else:
+            return nodes
 
     def reboot_node(self, node):
         vm = node.extra['managedObjectReference']
@@ -169,6 +179,17 @@ class VSphereNodeDriver(NodeDriver):
         except suds.WebFault:
             return False
 
+    def ex_answer_node(self, node, choice):
+        vm = node.extra['managedObjectReference']
+        try:
+            if hasattr(vm.runtime, "question"):
+                vm.AnswerVM(questionId = vm.runtime.question.id, answerChoice = choice)
+                return True
+            else:
+                return False
+        except suds.WebFault:
+            return False
+
     def ex_hardware_profiles(self):
         hardware_profiles = []
         hosts = HostSystem.all(self.connection)
@@ -177,6 +198,4 @@ class VSphereNodeDriver(NodeDriver):
         return hardware_profiles
 
     #def create_node(self, **kwargs):
-    #def destroy_node(self, node):
-    #def ex_shutdown_node(self, node):
 
