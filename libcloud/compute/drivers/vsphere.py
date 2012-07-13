@@ -79,7 +79,6 @@ class VSphereNodeDriver(NodeDriver):
                 'status': self.NODE_STATUS_MAP[vm.runtime.powerState],
                 'cpu': vm.summary.config.numCpu,
                 'memory': vm.summary.config.memorySizeMB * 1024**2,
-                'vmPathName': vm.summary.config.vmPathName,
                 'vncEnabled': vnc_enabled,
                 'toolsRunningStatus': str(vm.guest.toolsRunningStatus),
                 'toolsVersionStatus': str(vm.guest.toolsVersionStatus),
