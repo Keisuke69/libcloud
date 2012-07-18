@@ -179,6 +179,9 @@ class MockHttp(BaseMockHttpObject):
     def close(self):
         pass
 
+    def set_tunnel(self, **kwargs):
+        pass
+
     # Mock request/response example
     def _example(self, method, url, body, headers):
         """
